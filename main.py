@@ -3,12 +3,14 @@ from pyrogram import enums
 from pyrogram import utils
 from pyrogram.errors import FloodWait
 from bot.settings import Settings
+from bot.utils import create_filter_files_regex
+from bot.utils import LinkManager
+from pyrogram.types import Message
 from unidecode import unidecode
 import asyncio
 import re
 import sys
 import uvloop
-
 uvloop.install()
 
 # Due to the telegram issue 1314 INVALID PEER ERROR
@@ -24,33 +26,11 @@ def get_peer_type_new(peer_id: int) -> str:
 utils.get_peer_type = get_peer_type_new
 
 
-def create_filter_files_regex(file_names: list, allowed_extensions: list) -> str:
-    """
-    Function to filter name .
-
-    Parameters:
-    - file_names: List of files to search.
-    - allowed_extensions: The extensions you want to search (como ['pdf', 'docx', 'txt']).
-
-    Returns:
-    - A regular expression: An uncompiled regex to find those files
-    """
-
-    # 1. Remove accents and convert to lower case
-    normalized_names = [unidecode(name).lower() for name in file_names]
-    # 2. Create the name patterns 
-    names_pattern = ".*" + ".*|".join(normalized_names) + ".*"
-    # 3. Create the extensions patterns
-    extensions_pattern = "|".join(allowed_extensions)
-    # 4. Create the final regex
-    regex_pattern = r"^(" + names_pattern + r")\." + extensions_pattern + r"$"
-
-    return regex_pattern
-
 class Bot(Client):
 
     def __init__(self):
         settings = Settings()
+        self.link_manager = LinkManager()
         self.messages_queue = asyncio.Queue()
         self.finished_queue = False
         self.finished_dequeue = False 
@@ -66,7 +46,32 @@ class Bot(Client):
             sleep_threshold=180
         )
         
-    async def _qeueu_messages(
+    async def _messages_trial(self, regex:str, message: Message):
+
+        if message.document:
+            file_name = message.document.file_name
+            if re.match(regex, unidecode(file_name).lower()):
+                print(f"Matched file: {file_name}")
+                await self.messages_queue.put(message.id)
+            
+        if message.text:
+            # print("Analizying Text Message", message.id)
+            link = self.link_manager.search_link(
+                message_text=message.text,
+                message_entities=message.entities
+            )
+            if link:
+                print(link)
+           
+        #if message.photo:
+        #    print("Analizying Photo Message", message.id)
+        #    link = self.link_manager.search_link(
+        #        message=message.caption,
+        #        entities=message.caption_entities
+        #    )
+        #    print(link)
+
+    async def _queue_messages(
         self, 
         origin_group: int|str,
         regex: str,
@@ -76,14 +81,8 @@ class Bot(Client):
     ) -> None:
 
         try:
-            # Needs to break
             async for message in self.get_chat_history(origin_group):
-                if message.document:
-                    file_name = message.document.file_name
-                    print(f"Checking file: {file_name}")
-                    if re.match(regex, unidecode(file_name).lower()):
-                        print(f"Matched file: {file_name}")
-                        await self.messages_queue.put(message.id)
+               await self._messages_trial(regex, message) 
             
         except FloodWait as e:
             print(f"FloodWait detected. Waiting {e.value} seconds...")
@@ -145,17 +144,16 @@ class Bot(Client):
             origin_chat = await self.get_chat(origin_group)
             print(f"The origin chat: {origin_chat.title} is alright")
         except Exception as e:
-            sys.exit(f"Error with destiny group: {e}")
+            sys.exit(f"Error with origin group: {e}")
 
         try:
             destiny_chat = await self.get_chat(destiny_group)
             print(f"The destiny chat: {destiny_chat.title} is alright")
         except Exception as e:
-            sys.exit(f"Error with destiny group: {e}")
+            print(f"Error with destiny group: {e}")
         
-
         await asyncio.gather(
-            self._qeueu_messages(
+            self._queue_messages(
                 origin_group=origin_group, regex=regex
             ),
 
@@ -165,7 +163,6 @@ class Bot(Client):
                 topic_id=topic_id
             )
         )
-        
         print("Congratulations the program finished alllright gigygri hoo yea")
 
 async def main():
@@ -180,7 +177,7 @@ async def main():
     allowed_extensions = ['pdf']
 
     regex_pattern = create_filter_files_regex(file_names, allowed_extensions)
-    origin_group = -1001521800373
+    origin_group = -1001923606985
     destiny_group = -1002246324969
 
     await bot.clone_messages(
@@ -189,7 +186,9 @@ async def main():
         regex=regex_pattern,
     )
 
+
     print("\n>>> Bot up and running.\n")
+
     try:
         while True:
             await asyncio.sleep(3600)
