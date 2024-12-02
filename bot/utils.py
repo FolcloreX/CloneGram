@@ -67,7 +67,8 @@ class LinkManager:
         explicty in the message text inside MessageEntityType.URL
 
         Note, Telegram does not embed explicty links in the entity
-        to avoid redundancy
+        to avoid redundancy, that's why we need to pass the text
+        either way
         """
 
         urls = []
@@ -80,7 +81,9 @@ class LinkManager:
                     urls.append((url, link_type))
 
             if entity.type == MessageEntityType.URL:
-                url: str = message_text[entity.offset : entity.offset + entity.length]
+                url: str = message_text[
+                    entity.offset : entity.offset + entity.length
+                ]
                 link_type = self._classify_link(url)
                 if link_filters.get(link_type):
                     urls.append((url, link_type))
@@ -115,9 +118,10 @@ class LinkManager:
         A list of tuples, containing the link and the link_type e.g:
         [
             
-            (link, link_type: "private"|"public")
-            (https://..., "public")
-            (https://+..., "private")
+            (link, link_type: "private"|"public"|"general")
+            (https://t.me/..., "public")
+            (https://t.me/+, "private")
+            (https://www.example.com, "general")
             ...
         ]
         """
