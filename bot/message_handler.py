@@ -3,6 +3,7 @@ from pyrogram.types import Message
 from pyrogram.enums import MessageMediaType
 
 class MessageHandler(CustomClient):
+
     async def _send_copy_message(
             self, 
             chat_id: int|str,
@@ -92,7 +93,7 @@ class MessageHandler(CustomClient):
             message: Message object containing the data.
         """
         return await self.send_message(
-            chat_id=message.chat.id,
+            chat_id=chat_id,
             text=message.text,
             reply_to_message_id=reply_to_message_id,
         )
@@ -112,8 +113,8 @@ class MessageHandler(CustomClient):
             message: Message object containing the data.
         """
         return await self.send_photo(
-            chat_id=message.chat.id,
-            photo= file_path or message.photo.file_id,
+            chat_id=chat_id,
+            photo=file_path or message.photo.file_id,
             caption=message.caption,
             reply_to_message_id=reply_to_message_id,
         )
@@ -133,7 +134,7 @@ class MessageHandler(CustomClient):
             message: Message object containing the data.
         """
         return await self.send_video(
-            chat_id=message.chat.id,
+            chat_id=chat_id,
             video=file_path or message.video.file_id,
             caption=message.caption,
             duration=message.video.duration,
@@ -158,7 +159,7 @@ class MessageHandler(CustomClient):
             message: Message object containing the data.
         """
         return await self.send_document(
-            chat_id=message.chat.id,
+            chat_id=chat_id,
             document=file_path or message.document.file_id,
             caption=message.caption,
             reply_to_message_id=reply_to_message_id,

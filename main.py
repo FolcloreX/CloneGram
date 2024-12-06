@@ -1,9 +1,14 @@
 from bot.settings import Settings
-from bot.utils import create_filter_files_regex, LinkManager
 from bot.rate_limit import TokenBucket
 from bot.custom_client import CustomClient
 from bot.config import ConfigParser
 from bot.message_handler import MessageHandler
+from bot.utils import (
+    create_filter_files_regex,
+    LinkManager,
+    get_file_name,
+    get_file_extension
+)
 from pyrogram.types import (
     Message, Chat, ChatPermissions, ChatPreview
 )
@@ -14,7 +19,7 @@ import sys
 import uvloop
 from pathlib import Path
 import tempfile
-from tempfile import TemporaryDirectory
+import shutil
 import os
 from datetime import datetime
 
@@ -118,36 +123,44 @@ class Bot(MessageHandler):
         destiny_chat_id: int|str,
         reply_to_message_id: int|None = None
     ) -> Message|None:
+        
+        # Creates a temporary directory
+        temp_dir = tempfile.mkdtemp(dir='./.cache')
+        print("Processing message_id:", message.id)
 
-        os.makedirs('./.cache', exist_ok=True)
-        tempfile.tempdir = './.cache'
-        # Create a temporary directory for storing the downloaded file
-        with TemporaryDirectory() as temp_dir:
-            file_path = Path(temp_dir)
-
-            # Download the media if the media is downloadble
-            try:
-                print("Trying to download Message:")
-                downloaded_message = await self.download_media(
-                    message, file_name=str(file_path / )
-                )
-                
-            # If it's not just copy the content and send
-            except ValueError:
-                print("Non donwloable media, just sending")
-                return await self._send_copy_message(
-                    chat_id=destiny_chat_id,
-                    message=message,
-                    reply_to_message_id=reply_to_message_id
-                )
-
-            print("Sending donwloaded message")
+        try:
+            # We first try to get from the telegram atribute
+            filename = get_file_name(message)
+            # If we don't provide a filename it will be random
+            file_path = Path(temp_dir) / (filename or f"{message.id}_temp")
+            downloaded_message = await self.download_media(
+                message, file_name=str(file_path)
+            )
+            print("Downloaded file:", downloaded_message)
+            
+        except ValueError:
+            print("Non donwloable media, just sending")
             return await self._send_copy_message(
                 chat_id=destiny_chat_id,
                 message=message,
-                reply_to_message_id=reply_to_message_id,
-                file_path=downloaded_message,
+                reply_to_message_id=reply_to_message_id
             )
+
+        # It'll try to take the file extension from it's metadata
+        if not filename:
+            extension = get_file_extension(downloaded_message)
+            new_file_path = file_path.with_suffix(f".{extension}")
+            print(f"extension:{extension}\nnewfile:{new_file_path}")
+            os.rename(downloaded_message, new_file_path)
+            downloaded_message = new_file_path
+
+        return await self._send_copy_message(
+            chat_id=destiny_chat_id,
+            message=message,
+            reply_to_message_id=reply_to_message_id,
+            file_path=downloaded_message,
+        )
+
 
     async def _non_protected_content_deal(
         self,
@@ -157,7 +170,7 @@ class Bot(MessageHandler):
         reply_to_message_id: int|None = None
     ) -> Message|None:
         try:
-            print("Forward allowed, copying message from origin to destiny")
+            print("Forward allowed, copying message_id:", message.id)
             return await self.copy_message(
                 chat_id=destiny_chat_id,
                 from_chat_id=origin_chat_id,
@@ -184,7 +197,16 @@ class Bot(MessageHandler):
         message: Message,
         topic_id: int | None = None
     ) -> None:
-                
+        
+        if message.service:
+            print("Service message, ignoring message_id:", message.id)
+            return
+
+        # FIX I have to improve this logic, it's not necessaire to
+        # Check if everytime, only once, but it's always necessaire to 
+        # Test if the message is restricted or not, but I think a error
+        # Manager is better than a conditional
+
         # In case the group is restricted
         if origin_group.has_protected_content:
             sended_message = await self._protected_content_deal(
@@ -273,30 +295,14 @@ class Bot(MessageHandler):
 async def main():
     bot = Bot()
     await bot.start()
-    
-    file_names = [
-        'Aventuras na História',
-        'Mente Afiada',
-        'Veja',
-    ]
-    allowed_extensions = ['pdf']
-
-    regex_pattern = create_filter_files_regex(file_names, allowed_extensions)
     origin_group = -1002410566093
     #destiny_group = -1002246324969
-
+    print("\n>>> Cloner up and running.\n")
     await bot.clone_messages(
         origin_group_id=origin_group,
     )
 
-    print("\n>>> Bot up and running.\n")
 
-    try:
-        while True:
-            await asyncio.sleep(3600)
-    except KeyboardInterrupt:
-        await bot.stop()
-        print("\n>>> Bot turn off.\n")
 
 if __name__ == "__main__":
     asyncio.run(main())

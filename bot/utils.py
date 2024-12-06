@@ -2,8 +2,27 @@ import re
 from unidecode import unidecode
 from pyrogram.enums import MessageEntityType
 from pyrogram.types import Message
-from functools import partial
 from pyrogram.raw.base.message_entity import MessageEntity
+import filetype
+
+def get_file_name(message: Message) -> str | None:
+    if not message.media:
+        return None
+
+    media_attr = getattr(message, message.media.value, None)
+    if media_attr and hasattr(media_attr, "file_name"):
+        return media_attr.file_name
+
+    return None
+
+def get_file_extension(file_path: str) -> str|None:
+   # Detecta o tipo do arquivo com base no conteúdo
+    kind = filetype.guess(file_path)
+    if kind:
+        return kind.extension
+
+    print("Tipo de arquivo não detectado") 
+    return None
 
 def create_filter_files_regex(file_names: list, allowed_extensions: list) -> str:
     """

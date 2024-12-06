@@ -4,7 +4,6 @@ from typing import Union, Optional, AsyncGenerator
 import pyrogram
 from pyrogram import types, raw, utils
 from pyrogram import Client
-from pyrogram.raw.functions.channels import TogglePreHistoryHidden
 
 # Due to the telegram issue 1314 INVALID PEER ERROR
 def get_peer_type_new(peer_id: int) -> str:
@@ -117,11 +116,8 @@ class CustomClient(Client):
                 from_date=offset_date,
                 reverse=reverse
             )
-           
-            print(f"Messages fetched: {len(messages)}")
 
             if not messages:
-                print("No messages")
                 return
 
             offset_id = messages[-1].id + (1 if reverse else 0)
