@@ -16,14 +16,17 @@ from pyrogram.errors import ChatForwardsRestricted, FloodWait
 import asyncio
 import re
 import sys
-import uvloop
 from pathlib import Path
 import tempfile
 import shutil
 import os
 from datetime import datetime
 
-uvloop.install()
+try:
+    import uvloop
+    uvloop.install()
+except ModuleNotFoundError:
+    print("uvloop not installed, it's not available to windows. Consider installing it if you can.")
 
 class Bot(MessageHandler):
 
