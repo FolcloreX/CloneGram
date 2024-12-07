@@ -1,6 +1,7 @@
 from bot.custom_client import CustomClient
 from pyrogram.types import Message
 from pyrogram.enums import MessageMediaType
+from bot.utils import progress
 
 class MessageHandler(CustomClient):
 
@@ -117,6 +118,7 @@ class MessageHandler(CustomClient):
             photo=file_path or message.photo.file_id,
             caption=message.caption,
             reply_to_message_id=reply_to_message_id,
+            progress=progress,
         )
 
     async def send_copy_video(
@@ -124,7 +126,8 @@ class MessageHandler(CustomClient):
         chat_id: int|str,
         message: Message,
         reply_to_message_id: int|None = None,
-        file_path: str|None = None
+        file_path: str|None = None,
+        progress=progress,
     ) -> Message|None:
         """
         Sends a video based on the Message object.
@@ -141,6 +144,7 @@ class MessageHandler(CustomClient):
             width=message.video.width,
             height=message.video.height,
             reply_to_message_id=reply_to_message_id,
+            progress=progress,
         )
 
 
@@ -149,7 +153,8 @@ class MessageHandler(CustomClient):
         chat_id: int|str,
         message: Message,
         reply_to_message_id: int|None = None,
-        file_path: str|None = None
+        file_path: str|None = None,
+        progress=progress,
     ) -> Message|None:
         """
         Sends a document based on the Message object.
@@ -163,6 +168,7 @@ class MessageHandler(CustomClient):
             document=file_path or message.document.file_id,
             caption=message.caption,
             reply_to_message_id=reply_to_message_id,
+            progress=progress,
         )
 
     async def send_copy_audio(
@@ -170,7 +176,7 @@ class MessageHandler(CustomClient):
         chat_id: int|str,
         message: Message,
         reply_to_message_id: int|None = None,
-        file_path: str|None = None
+        file_path: str|None = None,
     ) -> Message|None:
         """
         Sends an audio file based on the Message object.
@@ -187,6 +193,7 @@ class MessageHandler(CustomClient):
             performer=message.audio.performer,
             title=message.audio.title,
             reply_to_message_id=reply_to_message_id,
+            progress=progress,
         )
 
 
@@ -210,6 +217,7 @@ class MessageHandler(CustomClient):
             caption=message.caption,
             duration=message.voice.duration,
             reply_to_message_id=reply_to_message_id,
+            progress=progress,
         )
 
 
@@ -218,7 +226,7 @@ class MessageHandler(CustomClient):
         chat_id: int|str,
         message: Message,
         reply_to_message_id: int|None = None,
-        file_path: str|None = None
+        file_path: str|None = None,
     ) -> Message|None:
         """
         Sends an animation (GIF) based on the Message object.
@@ -235,13 +243,14 @@ class MessageHandler(CustomClient):
             width=message.animation.width,
             height=message.animation.height,
             reply_to_message_id=reply_to_message_id,
+            progress=progress,
         )
 
     async def send_copy_sticker(
         self,
         chat_id: int|str,
         message: Message,
-        reply_to_message_id: int|None = None
+        reply_to_message_id: int|None = None,
     ) -> Message|None:
         """
         Sends a sticker.
@@ -257,6 +266,7 @@ class MessageHandler(CustomClient):
             sticker=message.sticker.file_id,
             reply_to_message_id=reply_to_message_id,
             reply_markup=message.reply_markup,
+            progress=progress,
         )
 
 

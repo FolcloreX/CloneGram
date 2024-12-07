@@ -7,7 +7,8 @@ from bot.utils import (
     create_filter_files_regex,
     LinkManager,
     get_file_name,
-    get_file_extension
+    get_file_extension,
+    progress,
 )
 from pyrogram.types import (
     Message, Chat, ChatPermissions, ChatPreview
@@ -26,17 +27,28 @@ try:
     import uvloop
     uvloop.install()
 except ModuleNotFoundError:
-    print("uvloop not installed, it's not available to windows. Consider installing it if you can.")
+    print("uvloop not installed, it's not available to windows.\nConsider installing it if you can.")
 
 class Bot(MessageHandler):
 
     def __init__(self):
         settings = Settings()
-        self.link_manager = LinkManager()
         self.messages_queue = asyncio.Queue()
+        self.download_queue = asyncio.Queue()
         self.finished_queue = False
-        self.finished_dequeue = False 
-        
+        self.finished_dequeue = False
+
+        # Since rate limit is the amount of messages sended per minute
+        seconds_in_minute = 60
+        self.rate_limit = 50
+        self.interval = int(seconds_in_minute / self.rate_limit)
+
+        self.bucket = TokenBucket(
+            inicial_tokens=1,
+            max_tokens=self.rate_limit,
+            refill_interval=self.interval
+        )
+
         # Get API keys at https://my.telegram.org/auth
         super().__init__(
             name=settings.account_name,
@@ -68,10 +80,40 @@ class Bot(MessageHandler):
                 
 
         except FloodWait as e:
-            print(f"FloodWait detected. Waiting {e.value} seconds...")
+            print(f"FloodWait detected, it's normal. Waiting {e.value} seconds...")
             await asyncio.sleep(e.value)
 
         self.finished_queue = True
+        print("All messages fecthed")
+
+    async def _queue_downloads(
+        self, 
+        message: Message,
+    ) -> Message|None:
+        
+        # Creates a temporary directory
+        temp_dir = tempfile.mkdtemp(dir='./.cache')
+
+        # We first try to get from the telegram atribute
+        filename = get_file_name(message)
+        # If we don't provide a filename it will be random
+        file_path = Path(temp_dir) / (filename or f"{message.id}_temp")
+
+        print("Started download message_id:", message.id)
+        downloaded_file_path = await self.download_media(
+            message, file_name=str(file_path), progress=progress
+        )
+        print("Finished download message_id:", message.id)
+    
+        # Sometimes the file in the telegram doesn't have filename
+        # Which has the extension that is a requirement to telegram upload
+        if not filename:
+            extension = get_file_extension(downloaded_file_path)
+            new_file_path = file_path.with_suffix(f".{extension}")
+            os.rename(file_path, new_file_path)
+            file_path = new_file_path
+       
+        await self.download_queue.put((message, file_path))
 
     async def _dequeue_messages(
         self,
@@ -81,30 +123,18 @@ class Bot(MessageHandler):
         rate_limit: int = 20,
     ) -> None:
         
-        
-        # Since rate limit is the amount of messages sended per minute
-        # It defines the time interval to send each message
-        seconds_in_minute = 60
-        interval = (seconds_in_minute / rate_limit)
-
-        # rate_limit Messages per Minute
-        bucket = TokenBucket(
-            inicial_tokens=1,
-            max_tokens=rate_limit,
-            refill_interval=interval
-        )
- 
         while True:
         
             if self.messages_queue.empty():
                 if self.finished_queue:
-                    return
+                    break
                 await asyncio.sleep(5)
 
             message: Message = await self.messages_queue.get()
 
-            while not bucket.consume():
-                await asyncio.sleep(interval)
+            while not self.bucket.consume():
+                print("Flood await time:", self.interval)
+                await asyncio.sleep(self.interval)
 
             try:
                 await self._messages_trial(
@@ -116,82 +146,51 @@ class Bot(MessageHandler):
 
             except Exception as e:
                 print(f"Error while trying to copy message: {e}")
-
+            
             finally:
                 self.messages_queue.task_done()
-    
-    async def _protected_content_deal(
+
+        print("All messages processed")
+        self.finished_dequeue = True
+
+    async def _dequeue_downloads(
         self, 
-        message: Message,
         destiny_chat_id: int|str,
         reply_to_message_id: int|None = None
     ) -> Message|None:
         
-        # Creates a temporary directory
-        temp_dir = tempfile.mkdtemp(dir='./.cache')
-        print("Processing message_id:", message.id)
-
-        try:
-            # We first try to get from the telegram atribute
-            filename = get_file_name(message)
-            # If we don't provide a filename it will be random
-            file_path = Path(temp_dir) / (filename or f"{message.id}_temp")
-            downloaded_message = await self.download_media(
-                message, file_name=str(file_path)
-            )
-            print("Downloaded file:", downloaded_message)
+        while True:
+            if self.download_queue.empty():
+                if self.finished_dequeue:
+                    break
+                await asyncio.sleep(5)
             
-        except ValueError:
-            print("Non donwloable media, just sending")
-            return await self._send_copy_message(
-                chat_id=destiny_chat_id,
-                message=message,
-                reply_to_message_id=reply_to_message_id
-            )
+            message, file_path = await self.download_queue.get()
 
-        # It'll try to take the file extension from it's metadata
-        if not filename:
-            extension = get_file_extension(downloaded_message)
-            new_file_path = file_path.with_suffix(f".{extension}")
-            print(f"extension:{extension}\nnewfile:{new_file_path}")
-            os.rename(downloaded_message, new_file_path)
-            downloaded_message = new_file_path
+            while not self.bucket.consume():
+                print("Flood await time:", self.interval)
+                await asyncio.sleep(self.interval)
+            
+            try:
+                print("Starting upload message_id:", message.id)
+                await self._send_copy_message(
+                    chat_id=destiny_chat_id,
+                    message=message,
+                    reply_to_message_id=reply_to_message_id,
+                    file_path=file_path,
+                )
 
-        return await self._send_copy_message(
-            chat_id=destiny_chat_id,
-            message=message,
-            reply_to_message_id=reply_to_message_id,
-            file_path=downloaded_message,
-        )
+            except Exception as e:
+                print(f"Error while trying to download message: {e}")
 
+            finally:
+                self.download_queue.task_done()
+            
 
-    async def _non_protected_content_deal(
-        self,
-        message: Message,
-        origin_chat_id: int|str,
-        destiny_chat_id: int|str,
-        reply_to_message_id: int|None = None
-    ) -> Message|None:
-        try:
-            print("Forward allowed, copying message_id:", message.id)
-            return await self.copy_message(
-                chat_id=destiny_chat_id,
-                from_chat_id=origin_chat_id,
-                message_id=message.id,
-                caption=message.caption,
-                caption_entities=message.caption_entities,
-                reply_to_message_id=reply_to_message_id,
-            ) 
+            print("Finished upload message_id:", message.id)
+            os.remove(file_path)
 
-        # In case the message is restricted
-        except ChatForwardsRestricted:
-            print(f"Message {message.id} is restricted from forwarding.")
-            return await self._protected_content_deal(
-                message=message,
-                destiny_chat_id=destiny_chat_id,
-                reply_to_message_id=reply_to_message_id
-            )
-
+        print("All medias uploaded")
 
     async def _messages_trial(
         self, 
@@ -199,38 +198,40 @@ class Bot(MessageHandler):
         origin_group: Chat,
         message: Message,
         topic_id: int | None = None
-    ) -> None:
-        
-        if message.service:
+    ) -> Message|None:
+
+        if message.service: 
+            if message.pinned_message:
+                pinned_message = message.pinned_message
+                print(f"Mensagem fixada: {pinned_message.text}")
+
             print("Service message, ignoring message_id:", message.id)
             return
+ 
+       
+        #self.messages_to_pin.append(message.id)
 
-        # FIX I have to improve this logic, it's not necessaire to
-        # Check if everytime, only once, but it's always necessaire to 
-        # Test if the message is restricted or not, but I think a error
-        # Manager is better than a conditional
+        # Send copy messages, it's same as a forward but, copying the
+        # content, so it works for unrestricted and restricted content
+        # Does't work with resctricted media, that we have to download
 
-        # In case the group is restricted
-        if origin_group.has_protected_content:
-            sended_message = await self._protected_content_deal(
-                message, destiny_group.id, topic_id
-            )
+        protected_content_media = (
+            (
+                origin_group.has_protected_content or 
+                message.has_protected_content 
+            ) and message.media
+        )
+
+        if protected_content_media:
+            return await self._queue_downloads(message)
         
-        # In case the group is not restricted
-        else:
-            sended_message = await self._non_protected_content_deal(
-                message, destiny_group.id, topic_id
-            )
-
-        # Set the same messages pinned as well
-        if message.pinned_message:
-            await self.pin_chat_message(
-                chat_id=destiny_group.id,
-                message_id=sended_message.id,
-                disable_notification=True
-            )
-          
-   
+        print("Copied message_id", message.id)
+        return await self._send_copy_message(
+            chat_id=destiny_group.id,
+            message=message,
+            reply_to_message_id=topic_id,
+        )
+        
     async def _validate_group(
         self, group_identifier: int|str
     ) -> Chat|ChatPreview: 
@@ -263,7 +264,7 @@ class Bot(MessageHandler):
     ) -> None:
         
         
-        origin_chat = await self._validate_group(origin_group_id)    
+        origin_chat: Chat =  await self._validate_group(origin_group_id)    
         print(f"Origin group: {origin_chat.title} is alright")
 
         if not destiny_group_id:
@@ -272,12 +273,12 @@ class Bot(MessageHandler):
                 print("No name provided, creating a default name")
                 new_group_name = f"{origin_chat.title}-clone"
             
-            destiny_group = await self._create_new_group(
+            destiny_group: Chat = await self._create_new_group(
                 group_title=new_group_name,
             )
             destiny_group_id = destiny_group.id
 
-        destiny_chat = await self._validate_group(destiny_group_id)
+        destiny_chat: Chat = await self._validate_group(destiny_group_id)
         print(f"Destiny group: {destiny_chat.title} is alright")
 
         await asyncio.gather(
@@ -285,15 +286,18 @@ class Bot(MessageHandler):
                 origin_chat=origin_chat,
             ),
 
+            self._dequeue_downloads(
+                destiny_chat_id=destiny_chat.id,
+                reply_to_message_id=topic_id,
+            ),
+ 
             self._dequeue_messages(
                 destiny_chat=destiny_chat,
                 origin_chat=origin_chat,
-                topic_id=topic_id
-            )
+                topic_id=topic_id,
+            ),
         )
 
-        print("Cloned sucessfuly")
-    
 
 async def main():
     bot = Bot()
@@ -304,8 +308,7 @@ async def main():
     await bot.clone_messages(
         origin_group_id=origin_group,
     )
-
-
+    await bot.stop()
 
 if __name__ == "__main__":
     asyncio.run(main())

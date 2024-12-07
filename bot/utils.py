@@ -5,6 +5,10 @@ from pyrogram.types import Message
 from pyrogram.raw.base.message_entity import MessageEntity
 import filetype
 
+# Keep track of the progress while uploading
+async def progress(current, total):
+    print(f"{current * 100 / total:.1f}%")
+
 def get_file_name(message: Message) -> str | None:
     if not message.media:
         return None
@@ -60,8 +64,6 @@ class FileManager:
         
     def __init__(self) -> None:
         pass
-
-
 
 # Needs some changes, just seeing how it behaves 
 class LinkManager:
