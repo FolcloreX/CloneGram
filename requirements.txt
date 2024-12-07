@@ -1,0 +1,14 @@
+annotated-types==0.7.0
+-e git+https://github.com/Matheus-Mota1/TelegramFilter@b6c82d781d12ffe31d9461b0325b81f0e152fc78#egg=bot
+filetype==1.2.0
+pyaes==1.6.1
+pydantic==2.8.2
+pydantic-settings==2.4.0
+pydantic_core==2.20.1
+Pyrogram==2.0.106
+PySocks==1.7.1
+python-dotenv==1.0.1
+TgCrypto==1.2.5
+typing_extensions==4.12.2
+Unidecode==1.3.8
+uvloop==0.20.0
