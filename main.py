@@ -173,6 +173,10 @@ class Bot(MessageHandler):
                 print("File reference expired, refreshing...")
                 empty_queue(self.messages_queue)
                 empty_queue(self.download_queue)
+            
+            except FloodWait as e:
+                print(f"Rate limit hit. Waiting for {e.value} seconds)...")
+                await asyncio.sleep(e.value)
 
             except Exception as e:
                 print(f"Message trial error: {e}")
@@ -219,6 +223,7 @@ class Bot(MessageHandler):
             self.last_processed_msg = message.id
             print("Finished upload message_id:", message.id)
             os.remove(file_path)
+            print("Removed file:", file_path)
 
         print("All medias uploaded")
 
@@ -340,7 +345,7 @@ async def main():
     topic_id = 7342
     
     # The last message it stoped
-    offset_id = 308
+    offset_id = 385
 
     print("\n>>> Cloner up and running.\n")
     await bot.clone_messages(

@@ -4,13 +4,14 @@ from pyrogram.enums import MessageEntityType
 from pyrogram.types import Message
 from pyrogram.raw.base.message_entity import MessageEntity
 import filetype
+from asyncio import Queue
 
 # Keep track of the progress while uploading
 async def progress(current, total):
     ...
     #print(f"{current * 100 / total:.1f}%")
 
-def empty_queue(queue: asyncio.Queue):
+def empty_queue(queue: Queue):
   while not queue.empty():
     queue.get_nowait()
     queue.task_done()
