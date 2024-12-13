@@ -7,7 +7,13 @@ import filetype
 
 # Keep track of the progress while uploading
 async def progress(current, total):
-    print(f"{current * 100 / total:.1f}%")
+    ...
+    #print(f"{current * 100 / total:.1f}%")
+
+def empty_queue(queue: asyncio.Queue):
+  while not queue.empty():
+    queue.get_nowait()
+    queue.task_done()
 
 def get_file_name(message: Message) -> str | None:
     if not message.media:

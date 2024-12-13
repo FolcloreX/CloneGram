@@ -9,6 +9,7 @@ from bot.utils import (
     get_file_name,
     get_file_extension,
     progress,
+    empty_queue
 )
 from pyrogram.types import (
     Message, Chat, ChatPermissions, ChatPreview
@@ -27,11 +28,6 @@ try:
     uvloop.install()
 except ModuleNotFoundError:
     print("uvloop not installed, it's not available to windows.\nConsider installing it if you can.")
-
-def empty_queue(queue: asyncio.Queue):
-  while not queue.empty():
-    queue.get_nowait()
-    queue.task_done()
 
 class Bot(MessageHandler):
 
@@ -109,7 +105,10 @@ class Bot(MessageHandler):
    
 
         # We first try to get from the telegram atribute
-        filename = get_file_name(message)
+        # I added the message_id, to avoid filename conflicts
+        # Since telegram can have two files with the same name in a group
+
+        filename = f"message_{message.id}_{get_file_name(message)}"
         # If we don't provide a filename it will be random
         file_path = self.download_dir / (filename or f"{message.id}_temp")
 
@@ -232,16 +231,9 @@ class Bot(MessageHandler):
     ) -> Message|None:
 
         if message.service: 
-            if message.pinned_message:
-                pinned_message = message.pinned_message
-                print(f"Mensagem fixada: {pinned_message.text}")
-
             print("Service message, ignoring message_id:", message.id)
             return
  
-       
-        # self.messages_to_pin.append(message.id)
-
         # Send copy messages, it's same as a forward but, copying the
         # content, so it works for unrestricted and restricted content
         # Does't work with resctricted media, that we have to download
@@ -348,14 +340,14 @@ async def main():
     topic_id = 7342
     
     # The last message it stoped
-    ofsset_id = 237
+    offset_id = 308
 
     print("\n>>> Cloner up and running.\n")
     await bot.clone_messages(
         origin_group_id=origin_group,
         destiny_group_id=destiny_group,
         topic_id=topic_id,
-        offset_id=ofsset_id
+        offset_id=offset_id
     )
 
     await bot.stop()
