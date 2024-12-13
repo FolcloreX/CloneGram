@@ -173,6 +173,73 @@ toml = ["tomli (>=2.0.1)"]
 yaml = ["pyyaml (>=6.0.1)"]
 
 [[package]]
+name = "pyqt6"
+version = "6.7.1"
+description = "Python bindings for the Qt cross platform application toolkit"
+optional = false
+python-versions = ">=3.8"
+files = [
+    {file = "PyQt6-6.7.1-1-cp38-abi3-manylinux_2_28_aarch64.whl", hash = "sha256:7f397f4b38b23b5588eb2c0933510deb953d96b1f0323a916c4839c2a66ccccc"},
+    {file = "PyQt6-6.7.1-1-cp38-abi3-manylinux_2_28_x86_64.whl", hash = "sha256:c2f202b7941aa74e5c7e1463a6f27d9131dbc1e6cabe85571d7364f5b3de7397"},
+    {file = "PyQt6-6.7.1-cp38-abi3-macosx_11_0_universal2.whl", hash = "sha256:f053378e3aef6248fa612c8afddda17f942fb63f9fe8a9aeb2a6b6b4cbb0eba9"},
+    {file = "PyQt6-6.7.1-cp38-abi3-manylinux_2_28_aarch64.whl", hash = "sha256:0adb7914c732ad1dee46d9cec838a98cb2b11bc38cc3b7b36fbd8701ae64bf47"},
+    {file = "PyQt6-6.7.1-cp38-abi3-manylinux_2_28_x86_64.whl", hash = "sha256:2d771fa0981514cb1ee937633dfa64f14caa902707d9afffab66677f3a73e3da"},
+    {file = "PyQt6-6.7.1-cp38-abi3-win_amd64.whl", hash = "sha256:fa3954698233fe286a8afc477b84d8517f0788eb46b74da69d3ccc0170d3714c"},
+    {file = "PyQt6-6.7.1.tar.gz", hash = "sha256:3672a82ccd3a62e99ab200a13903421e2928e399fda25ced98d140313ad59cb9"},
+]
+
+[package.dependencies]
+PyQt6-Qt6 = ">=6.7.0,<6.8.0"
+PyQt6-sip = ">=13.8,<14"
+
+[[package]]
+name = "pyqt6-qt6"
+version = "6.7.3"
+description = "The subset of a Qt installation needed by PyQt6."
+optional = false
+python-versions = "*"
+files = [
+    {file = "PyQt6_Qt6-6.7.3-py3-none-macosx_10_14_x86_64.whl", hash = "sha256:f517a93b6b1a814d4aa6587adc312e812ebaf4d70415bb15cfb44268c5ad3f5f"},
+    {file = "PyQt6_Qt6-6.7.3-py3-none-macosx_11_0_arm64.whl", hash = "sha256:8551732984fb36a5f4f3db51eafc4e8e6caf18617365830285306f2db17a94c2"},
+    {file = "PyQt6_Qt6-6.7.3-py3-none-manylinux_2_28_aarch64.whl", hash = "sha256:50c7482bcdcf2bb78af257fb10ed8b582f8daf91d829782393bc50ac5a0a900c"},
+    {file = "PyQt6_Qt6-6.7.3-py3-none-manylinux_2_28_x86_64.whl", hash = "sha256:cb525fdd393332de60887953029276a44de480fce1d785251ae639580f5e7246"},
+    {file = "PyQt6_Qt6-6.7.3-py3-none-win_amd64.whl", hash = "sha256:36ea0892b8caeb983af3f285f45fb8dfbb93cfd972439f4e01b7efb2868f6230"},
+]
+
+[[package]]
+name = "pyqt6-sip"
+version = "13.9.0"
+description = "The sip module support for PyQt6"
+optional = false
+python-versions = ">=3.8"
+files = [
+    {file = "PyQt6_sip-13.9.0-cp310-cp310-macosx_10_9_universal2.whl", hash = "sha256:502eed3d201cfba2ab4965faa41e8e8f7e5f825b3eae35681f6fc0544f8b7d0e"},
+    {file = "PyQt6_sip-13.9.0-cp310-cp310-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:990227a9d2c4ebc771f92e0f0df3d0553aa4f1f260710ebbeb24989f6f4c20ab"},
+    {file = "PyQt6_sip-13.9.0-cp310-cp310-manylinux_2_5_x86_64.manylinux1_x86_64.whl", hash = "sha256:2ca9e13b94f2a6d4ccb2be9cd46630e57ac37e3e3f538162eb53c635a103d298"},
+    {file = "PyQt6_sip-13.9.0-cp310-cp310-win_amd64.whl", hash = "sha256:1100d1d0418cb90acf7e48b8b842d9cba32d09ccec1d9f5eb9cad8cff1e215f1"},
+    {file = "PyQt6_sip-13.9.0-cp311-cp311-macosx_10_9_universal2.whl", hash = "sha256:3c7bbdb7654eb6b31b19a762148450482d7aba1b19c226659c726dcc0bff2969"},
+    {file = "PyQt6_sip-13.9.0-cp311-cp311-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:309f29212c08593aadbc8b84a2397b02a5869aba247ea75b0de10c091a552282"},
+    {file = "PyQt6_sip-13.9.0-cp311-cp311-manylinux_2_5_x86_64.manylinux1_x86_64.whl", hash = "sha256:9ea5410a0ef73ccfbe09ee648fd8738b8e236ce5bdc4d44407621ff29fa48f39"},
+    {file = "PyQt6_sip-13.9.0-cp311-cp311-win_amd64.whl", hash = "sha256:54099e6d55c5525fa807f67d40770d504c2355dbb5305729fda812f01554058c"},
+    {file = "PyQt6_sip-13.9.0-cp311-cp311-win_arm64.whl", hash = "sha256:5de14a0712f03177454fa76628a7fa95dc563353bdc7e0000b86084c2bb19596"},
+    {file = "PyQt6_sip-13.9.0-cp312-cp312-macosx_10_9_universal2.whl", hash = "sha256:9603d4c5d97fb9d1c7962f5fc3942a09a4dcd195b01c3a15043b36a71145d738"},
+    {file = "PyQt6_sip-13.9.0-cp312-cp312-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:5091c7a882da684cddc295b25606a0a76b7e7d9fb097c2a06669185b46c7094c"},
+    {file = "PyQt6_sip-13.9.0-cp312-cp312-manylinux_2_5_x86_64.manylinux1_x86_64.whl", hash = "sha256:8abe133776d664affa8a0084d2baf15a63e67dcbf1ec81ce8b9ff1f23c581fd9"},
+    {file = "PyQt6_sip-13.9.0-cp312-cp312-win_amd64.whl", hash = "sha256:00cfee11810e3546d6a29630a60fe4c9b0fbabcce5d8a25f606e6e12dcfbd0b9"},
+    {file = "PyQt6_sip-13.9.0-cp312-cp312-win_arm64.whl", hash = "sha256:a3fddb52d2af8ddca00a996191f6b26af15b5f49cfc3ae4810abbd8ef001e230"},
+    {file = "PyQt6_sip-13.9.0-cp313-cp313-macosx_10_13_universal2.whl", hash = "sha256:09b4333fd705d4b4b289aba2e47f2aa469c99596acd8d6352eba784d3e4bcadc"},
+    {file = "PyQt6_sip-13.9.0-cp313-cp313-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:35d4bd23d62df44543aa70bf053618265fed554c8d416167424027891267831c"},
+    {file = "PyQt6_sip-13.9.0-cp313-cp313-manylinux_2_5_x86_64.manylinux1_x86_64.whl", hash = "sha256:6cd7d090df6eba579a3f07e410d4932e8b7e7768b3d814388f9b07ee7fb884ba"},
+    {file = "PyQt6_sip-13.9.0-cp313-cp313-win_amd64.whl", hash = "sha256:28f3e4310d636c33beb4f8687daad9253be000bf9b53d20bb07e8313243db82c"},
+    {file = "PyQt6_sip-13.9.0-cp313-cp313-win_arm64.whl", hash = "sha256:3a4fdd61013d4b9d288bdea3194b6388268ca94106d2b05f2c28609b14c844a3"},
+    {file = "PyQt6_sip-13.9.0-cp39-cp39-macosx_10_9_universal2.whl", hash = "sha256:17a41acd393318ec307d6e83cd8d4f59859ad782c50a237d0210d296d4012223"},
+    {file = "PyQt6_sip-13.9.0-cp39-cp39-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:f3b70d1893bd8336f9eeaf4a4db5e152b40584f3f9cd97b09c36be2e6e05d5fb"},
+    {file = "PyQt6_sip-13.9.0-cp39-cp39-manylinux_2_5_x86_64.manylinux1_x86_64.whl", hash = "sha256:04c3dbc8df1a9ee76d8209bb6c2cc20d607f032ad4266cfd256eb38ca519b429"},
+    {file = "PyQt6_sip-13.9.0-cp39-cp39-win_amd64.whl", hash = "sha256:1c8e0d73e9956eaf7e2c189a78550e4e333482f33e15f8f04ae7eaa367cea4be"},
+    {file = "PyQt6_sip-13.9.0.tar.gz", hash = "sha256:5dc660f2242f6bd8c6bc5973a39f31a5b97f261f5ba69b4571912c7feae346bb"},
+]
+
+[[package]]
 name = "pyrogram"
 version = "2.0.106"
 description = "Elegant, modern and asynchronous Telegram MTProto API framework in Python for users and bots"
@@ -347,4 +414,4 @@ test = ["Cython (>=0.29.36,<0.30.0)", "aiohttp (==3.9.0b0)", "aiohttp (>=3.8.1)"
 [metadata]
 lock-version = "2.0"
 python-versions = "3.12.*"
-content-hash = "f3476cf92ca612a592647d651c3d73d86420c7cb05e6e3ea0c655f21c965d5e6"
+content-hash = "a95aeaa4420825d30bde59537ab0a7eb44ecc5d1bc6e8605b745963743164809"
