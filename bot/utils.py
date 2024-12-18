@@ -1,15 +1,14 @@
 import re
 from unidecode import unidecode
-from pyrogram.enums import MessageEntityType
-from pyrogram.types import Message
-from pyrogram.raw.base.message_entity import MessageEntity
 import filetype
 from asyncio import Queue
-
-# Keep track of the progress while uploading
-async def progress(current, total):
-    ...
-    #print(f"{current * 100 / total:.1f}%")
+from tqdm import tqdm
+from telethon.tl.types import (
+    Message,
+    MessageEntityTextUrl,
+    MessageEntityUrl,
+)
+import time
 
 def empty_queue(queue: Queue):
   while not queue.empty():
@@ -17,13 +16,8 @@ def empty_queue(queue: Queue):
     queue.task_done()
 
 def get_file_name(message: Message) -> str | None:
-    if not message.media:
-        return None
-
-    media_attr = getattr(message, message.media.value, None)
-    if media_attr and hasattr(media_attr, "file_name"):
-        return media_attr.file_name
-
+    if message.file and message.file.name:
+        return message.file.name
     return None
 
 def get_file_extension(file_path: str) -> str|None:
@@ -58,6 +52,27 @@ def create_filter_files_regex(file_names: list, allowed_extensions: list) -> str
 
     return regex_pattern
 
+def create_progress_callback(start_time: float, desc: str = ""):
+    progress_bar = tqdm(
+        total=100,  
+        unit='B',
+        unit_scale=True,
+        desc=desc,
+        leave=True
+    )
+
+    # Retorna a função de callback
+    def wrapped_progress_callback(received_bytes, total_bytes):
+        progress = (received_bytes / total_bytes) * 100
+        progress_bar.n = progress  
+        progress_bar.last_print_n = progress
+        progress_bar.update(0)  
+        # Calculate the download speed to show, 
+        progress_bar.set_postfix({
+            'Speed': f"{(received_bytes / (time.time() - start_time)) / 1024 / 1024:.2f} MB/s"
+        })
+    
+    return wrapped_progress_callback
 def create_filter_links_regex(
     message_text: str, pattern_group_title: str = "all",
     ) -> str|None:
@@ -72,43 +87,35 @@ class FileManager:
     def __init__(self) -> None:
         pass
 
-# Needs some changes, just seeing how it behaves 
 class LinkManager:
-
     def __init__(self) -> None:
         self.link_patterns = r"""
             (https://t\.me/\+[^/]+)|   # Group 1: Private Telegram invite links
             (https://t\.me/[^/]+)|     # Group 2: Public Telegram links
             (https?://[^\s]+)          # Group 3: General internet links
         """
-    
+
     def _search_links(
         self,
         message_text: str,
-        entities: list[MessageEntity],
+        entities: list,
         link_filters: dict,
     ) -> list:
-
         """
         Search for links in the message:
-        hyperlinks or embedded inside MessageEntityType.TEXT_LINK 
-        explicty in the message text inside MessageEntityType.URL
-
-        Note, Telegram does not embed explicty links in the entity
-        to avoid redundancy, that's why we need to pass the text
-        either way
+        - Hyperlinks (MessageEntityTextUrl)
+        - Explicitly in the message text (MessageEntityUrl)
         """
-
         urls = []
 
         for entity in entities:
-            if entity.type == MessageEntityType.TEXT_LINK:
+            if isinstance(entity, MessageEntityTextUrl):
                 url: str = entity.url
                 link_type = self._classify_link(url)
                 if link_filters.get(link_type):
                     urls.append((url, link_type))
 
-            if entity.type == MessageEntityType.URL:
+            elif isinstance(entity, MessageEntityUrl):
                 url: str = message_text[
                     entity.offset : entity.offset + entity.length
                 ]
@@ -118,7 +125,7 @@ class LinkManager:
 
         return urls
 
-    def _classify_link(self, link:str) -> str|None:
+    def _classify_link(self, link: str) -> str | None:
         match = re.match(self.link_patterns, link, re.VERBOSE)
         if match:
             if match.group(1):
@@ -129,43 +136,37 @@ class LinkManager:
                 return "general"
         return None  # Not a valid link
 
-
-    # FIX There's a better way to do it, feel free to improve
     def search_link(
         self,
         message_text: str,
-        message_entities: list[MessageEntity]|None,
+        message_entities: list | None,
         private: bool = True,
         public: bool = True,
         general: bool = False,
-    ) -> list|None:
-
-        """Search for telegram link inside the text passed
+    ) -> list | None:
+        """
+        Search for Telegram links inside the provided text.
 
         Return:
-        A list of tuples, containing the link and the link_type e.g:
+        A list of tuples containing the link and the link type:
         [
-            
-            (link, link_type: "private"|"public"|"general")
-            (https://t.me/..., "public")
-            (https://t.me/+, "private")
-            (https://www.example.com, "general")
-            ...
+            (link, link_type: "private"|"public"|"general"),
+            ("https://t.me/...", "public"),
+            ("https://t.me/+", "private"),
+            ("https://www.example.com", "general"),
         ]
         """
-
         link_filters = {
             "private": private,
             "public": public,
             "general": general,
         }
 
-        # If the message has no entities has no links
+        # If the message has no entities, it has no links
         if not message_entities:
             return None
 
-             # Search for links that are explicty in text e.g https://xyz
+        # Search for links explicitly in the text (e.g., https://xyz)
         links = self._search_links(message_text, message_entities, link_filters)
         return links
-
 
