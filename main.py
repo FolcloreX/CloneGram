@@ -1,6 +1,7 @@
 from bot.settings import Settings
 from bot.rate_limit import TokenBucket
 from bot.config import ConfigParser
+from bpt.FastTelethon import download_file, upload_file
 from bot.utils import (
     create_filter_files_regex,
     LinkManager,
@@ -16,7 +17,6 @@ from telethon.errors import (
     FloodPremiumWaitError,
     FileReferenceExpiredError,
 )    
-
 import time
 import asyncio
 from pathlib import Path
@@ -161,17 +161,32 @@ class Bot(TelegramClient):
                 reply_to=reply_to_message_id,
             )
         
-        start_time = time.time()
-        await self.send_file(
-            entity=chat_id,
-            file=file_path or message.media,
-            file_name=message.file.name,
-            caption=message.text,
-            reply_to=reply_to_message_id,
-            progress_callback=create_progress_callback(
-                start_time, f"Uploading   message_id:{message.id}"
-            ),
-        )
+        
+        # Have to improve it later, did only to avoid
+        # Clutter the chat if progress_callback without content
+
+        if message.noforwards:
+            start_time = time.time()
+
+            await self.send_file(
+                entity=chat_id,
+                file=file_path or message.media,
+                file_name=message.file.name,
+                caption=message.text,
+                reply_to=reply_to_message_id,
+                progress_callback=create_progress_callback(
+                    start_time, f"Uploading   message_id:{message.id}"
+                ),
+            )
+
+        else:
+            await self.send_file(
+                entity=chat_id,
+                file=file_path or message.media,
+                file_name=message.file.name,
+                caption=message.text,
+                reply_to=reply_to_message_id,
+            )
 
 
     async def _send_messages(

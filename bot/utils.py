@@ -73,6 +73,7 @@ def create_progress_callback(start_time: float, desc: str = ""):
         })
     
     return wrapped_progress_callback
+
 def create_filter_links_regex(
     message_text: str, pattern_group_title: str = "all",
     ) -> str|None:
