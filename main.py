@@ -1,23 +1,26 @@
 from bot.settings import Settings
 from bot.rate_limit import TokenBucket
 from bot.config import ConfigParser
-from bpt.FastTelethon import download_file, upload_file
+from bot.FastTelethon import fast_download, fast_upload
 from bot.utils import (
-    create_filter_files_regex,
-    LinkManager,
     get_file_name,
     get_file_extension,
     empty_queue,
     create_progress_callback,
 )
 from telethon import TelegramClient
-from telethon.tl.types import Message, User, Chat, MessageService
+from telethon.tl.types import (
+    Message,
+    User,
+    Chat,
+    MessageService
+)
 from telethon.errors import (
     FloodWaitError,
     FloodPremiumWaitError,
     FileReferenceExpiredError,
 )    
-import time
+from typing import Optional, Callable
 import asyncio
 from pathlib import Path
 from datetime import datetime
@@ -84,7 +87,7 @@ class Bot(TelegramClient):
         offset_id: int = 0,
         limit: int = 100,
         reverse: bool = True,
-        offset_date: datetime|None = None,
+        offset_date: Optional[datetime] = None,
     ) -> None:
         
         try:
@@ -125,14 +128,21 @@ class Bot(TelegramClient):
         else:
             file_path = self.download_dir / f"{message.id}_temp"
         
-        start_time = time.time()
+        #await fast_download(
+        #    client=self,
+        #    message=message,
+        #    file_path=str(file_path),
+        #    progress_callback=create_progress_callback(
+        #        f"Downloading message_id:{message.id}")
+        #)
+
         await self.download_media(
             message=message, 
             file=str(file_path),
             progress_callback=create_progress_callback(
-                start_time, f"Downloading message_id:{message.id}"),
+                f"Downloading message_id:{message.id}"),
         )
-    
+
         # Sometimes the file in the telegram doesn't have filename
         # Which has the extension that is a requirement to telegram upload
         if not filename:
@@ -153,7 +163,7 @@ class Bot(TelegramClient):
         media: bool = False,
     ) -> Message | None:
         
-
+        
         if message.file is None:
             return await self.send_message(
                 entity=chat_id,
@@ -161,13 +171,36 @@ class Bot(TelegramClient):
                 reply_to=reply_to_message_id,
             )
         
-        
         # Have to improve it later, did only to avoid
         # Clutter the chat if progress_callback without content
+        print("Message no forwards:", message.noforwards)
 
-        if message.noforwards:
-            start_time = time.time()
+        if message.noforwards is None:
+            #await self.send_file(
+            #    entity=chat_id,
+            #    file=message.media,
+            #    file_name=message.file.name,
+            #    caption=message.text,
+            #    reply_to=reply_to_message_id,
+            #)
 
+            await self.send_file(
+                entity=chat_id,
+                file=file_path or message.media,
+                file_name=message.file.name,
+                caption=message.text,
+                reply_to=reply_to_message_id,
+            )
+
+        else:
+            #await fast_upload(
+            #    client=self, 
+            #    file_path=str(file_path),
+            #    progress_callback=create_progress_callback(
+            #        f"Uploading   message_id:{message.id}"
+            #    ),
+            #)
+            
             await self.send_file(
                 entity=chat_id,
                 file=file_path or message.media,
@@ -175,17 +208,8 @@ class Bot(TelegramClient):
                 caption=message.text,
                 reply_to=reply_to_message_id,
                 progress_callback=create_progress_callback(
-                    start_time, f"Uploading   message_id:{message.id}"
+                    f"Uploading   message_id:{message.id}"
                 ),
-            )
-
-        else:
-            await self.send_file(
-                entity=chat_id,
-                file=file_path or message.media,
-                file_name=message.file.name,
-                caption=message.text,
-                reply_to=reply_to_message_id,
             )
 
 
@@ -193,10 +217,10 @@ class Bot(TelegramClient):
         self,
         origin_chat: Chat,
         destiny_chat: Chat,
-        topic_id: int|None = None,
+        topic_id: Optional[int] = None,
         rate_limit: int = 20,
         offset_id: int = 0,
-        offset_date: datetime | None = None
+        offset_date: Optional[datetime] = None
     ) -> None:
         """
         This function is responsible to take the messages captured and
@@ -266,7 +290,7 @@ class Bot(TelegramClient):
     async def _upload_downloads(
         self, 
         destiny_chat_id: int|str,
-        reply_to_message_id: int|None = None
+        reply_to_message_id: Optional[int] = None
     ) -> Message|None:
 
         """
@@ -311,7 +335,7 @@ class Bot(TelegramClient):
         destiny_group: Chat,
         origin_group: Chat,
         message: Message,
-        topic_id: int | None = None
+        topic_id: Optional[int] = None
     ) -> Message|None:
 
         # Send copy messages, it's same as a forward but, copying the
@@ -345,10 +369,10 @@ class Bot(TelegramClient):
         self, 
         origin_group_id: int|str,
         destiny_group_id: int|str,
-        new_group_name: str|None = None,
-        topic_id: int|None = None,
-        offset_id: int = 0,
-        offset_date: datetime | None = None
+        new_group_name: Optional[str] = None,
+        topic_id: Optional[int] = None,
+        offset_id: Optional[int] = 0,
+        offset_date: Optional[datetime] = None
     ) -> None:
         
         try:
@@ -399,7 +423,7 @@ async def main():
 
     
     # The last message it stoped
-    offset_id = 849 
+    offset_id = 862 
 
     print("\n>>> Cloner up and running.\n")
     await bot.clone_messages(

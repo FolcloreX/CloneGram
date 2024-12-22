@@ -10,6 +10,33 @@ from telethon.tl.types import (
 )
 import time
 
+
+def create_progress_callback(desc: str = ""):
+    # Speed formula: 
+    # internet speed = receive_bytes / total_bytes
+
+    start_time = time.time()
+    progress_bar = tqdm(
+        total=100,  
+        unit='B',
+        unit_scale=True,
+        desc=desc,
+        leave=True
+    )
+
+    # Retorna a função de callback
+    def wrapped_progress_callback(received_bytes, total_bytes):
+        progress = (received_bytes / total_bytes) * 100
+        progress_bar.n = progress  
+        progress_bar.last_print_n = progress
+        progress_bar.update(0)  
+        # Calculate the download speed to show, 
+        progress_bar.set_postfix({
+            'Speed': f"{(received_bytes / (time.time() - start_time)) / 1024 / 1024:.2f} MB/s"
+        })
+    
+    return wrapped_progress_callback
+
 def empty_queue(queue: Queue):
   while not queue.empty():
     queue.get_nowait()
@@ -28,6 +55,7 @@ def get_file_extension(file_path: str) -> str|None:
 
     print("Tipo de arquivo não detectado") 
     return None
+
 
 def create_filter_files_regex(file_names: list, allowed_extensions: list) -> str:
     """
@@ -52,28 +80,6 @@ def create_filter_files_regex(file_names: list, allowed_extensions: list) -> str
 
     return regex_pattern
 
-def create_progress_callback(start_time: float, desc: str = ""):
-    progress_bar = tqdm(
-        total=100,  
-        unit='B',
-        unit_scale=True,
-        desc=desc,
-        leave=True
-    )
-
-    # Retorna a função de callback
-    def wrapped_progress_callback(received_bytes, total_bytes):
-        progress = (received_bytes / total_bytes) * 100
-        progress_bar.n = progress  
-        progress_bar.last_print_n = progress
-        progress_bar.update(0)  
-        # Calculate the download speed to show, 
-        progress_bar.set_postfix({
-            'Speed': f"{(received_bytes / (time.time() - start_time)) / 1024 / 1024:.2f} MB/s"
-        })
-    
-    return wrapped_progress_callback
-
 def create_filter_links_regex(
     message_text: str, pattern_group_title: str = "all",
     ) -> str|None:
@@ -82,11 +88,6 @@ def create_filter_links_regex(
     normalized_pattern = unidecode(pattern_group_title).lower()
     pattern = rf"{normalized_pattern}"
     return pattern
-
-class FileManager:
-        
-    def __init__(self) -> None:
-        pass
 
 class LinkManager:
     def __init__(self) -> None:

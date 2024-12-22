@@ -9,6 +9,7 @@ import os
 from collections import defaultdict
 from typing import (
     Optional, 
+    Callable,
     List,
     AsyncGenerator,
     Union,
@@ -33,6 +34,7 @@ from telethon.tl.functions.upload import (
 )
 
 from telethon.tl.types import (
+    Message, 
     Document, 
     InputFileLocation,
     InputDocumentFileLocation,
@@ -171,7 +173,7 @@ class ParallelTransferrer:
         if dc_id and self.client.session.dc_id != dc_id:
             self.auth_key = None
         else:
-            self.auth_keu = self.client.session.auth_key
+            self.auth_key = self.client.session.auth_key
 
         self.senders = None
         self.upload_ticker = 0
@@ -522,3 +524,39 @@ async def upload_file(
     )[0]
 
     return res
+
+
+async def fast_upload(
+    client: TelegramClient,
+    file_path: str,
+    file_name: Optional[str] = None,
+    progress_callback: Optional[Callable] = None
+) -> TypeInputFile:
+
+    with open(file_path, "rb") as binary_file:
+        uploaded_file_path = await upload_file(
+            client=client,
+            file=binary_file,
+            progress_callback=progress_callback
+        )
+        
+        return uploaded_file_path
+
+async def fast_download(
+    client: TelegramClient,
+    message: Message,
+    file_path: str,
+    progress_callback: Optional[Callable] = None
+) -> BinaryIO:
+
+    file = message.document
+                    
+    with open(file_path, "wb") as binary_file:
+        download_path = await download_file(
+            client=client, 
+            location=file, 
+            out=binary_file,
+            progress_callback=progress_callback
+        )
+
+        return download_path
