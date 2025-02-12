@@ -54,7 +54,7 @@ class Bot(TelegramClient):
 
         # Since rate limit is the amount of messages sended per minute
         seconds_in_minute = 60
-        self.rate_limit = 60
+        self.rate_limit = 20
         self.interval = seconds_in_minute / self.rate_limit
 
         self.bucket = TokenBucket(
@@ -164,53 +164,23 @@ class Bot(TelegramClient):
     ) -> Message | None:
         
         
-        if message.file is None:
+        if not file_path:
             return await self.send_message(
                 entity=chat_id,
                 message=message,
                 reply_to=reply_to_message_id,
             )
-        
-        # Have to improve it later, did only to avoid
-        # Clutter the chat if progress_callback without content
-        print("Message no forwards:", message.noforwards)
-
-        if message.noforwards is None:
-            #await self.send_file(
-            #    entity=chat_id,
-            #    file=message.media,
-            #    file_name=message.file.name,
-            #    caption=message.text,
-            #    reply_to=reply_to_message_id,
-            #)
-
-            await self.send_file(
-                entity=chat_id,
-                file=file_path or message.media,
-                file_name=message.file.name,
-                caption=message.text,
-                reply_to=reply_to_message_id,
-            )
-
-        else:
-            #await fast_upload(
-            #    client=self, 
-            #    file_path=str(file_path),
-            #    progress_callback=create_progress_callback(
-            #        f"Uploading   message_id:{message.id}"
-            #    ),
-            #)
-            
-            await self.send_file(
-                entity=chat_id,
-                file=file_path or message.media,
-                file_name=message.file.name,
-                caption=message.text,
-                reply_to=reply_to_message_id,
-                progress_callback=create_progress_callback(
-                    f"Uploading   message_id:{message.id}"
-                ),
-            )
+         
+        await self.send_file(
+            entity=chat_id,
+            file=file_path,
+            file_name=message.file.name,
+            caption=message.text,
+            reply_to=reply_to_message_id,
+            progress_callback=create_progress_callback(
+                f"Uploading   message_id:{message.id}"
+            ),
+        )
 
 
     async def _send_messages(
@@ -374,18 +344,23 @@ class Bot(TelegramClient):
         offset_id: Optional[int] = 0,
         offset_date: Optional[datetime] = None
     ) -> None:
-        
+       
+        # Get open dialogs, in case it's a privated chat, etc...
+        await self.get_dialogs()
+
         try:
             origin_chat = await self.get_entity(origin_group_id)
             print(f"Origin group: {origin_chat.title} is alright")
         except Exception as e:
-            raise f"Error with origin chat: {e}"
+            print(f"Error with origin chat: {e}")
+            return
 
         try:
             destiny_chat = await self.get_entity(destiny_group_id)
-            print(f"Destiny group: {destiny_chat.title} is alright")
+            print(f"Destiny group is alright")
         except Exception as e:
-            raise f"Error with destiny chat: {e}"
+            print(f"Error with destiny chat: {e}")
+            return
 
         await asyncio.gather(
 
@@ -413,23 +388,23 @@ async def main():
     )
 
     # Chat to catch from
-    origin_group = -1001889466238
+    origin_group = -1001781106134
 
     # Chat to send to
-    destiny_group = -1002070526963
+    destiny_group = 7924621890 
 
     # Topic that you want to send
-    topic_id = 7342
+    # topic_id = 
 
     
     # The last message it stoped
-    offset_id = 862 
+    offset_id = 161
 
     print("\n>>> Cloner up and running.\n")
     await bot.clone_messages(
         origin_group_id=origin_group,
         destiny_group_id=destiny_group,
-        topic_id=topic_id,
+        # topic_id=topic_id,
         offset_id=offset_id
     )
 
