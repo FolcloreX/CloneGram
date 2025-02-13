@@ -9,11 +9,15 @@ from bot.utils import (
     create_progress_callback,
 )
 from telethon import TelegramClient
+from telethon.tl.custom import Button
 from telethon.tl.types import (
     Message,
     User,
     Chat,
-    MessageService
+    MessageService,
+    KeyboardButtonUrl,
+    ReplyInlineMarkup,
+    KeyboardButtonRow,
 )
 from telethon.errors import (
     FloodWaitError,
@@ -26,6 +30,7 @@ from pathlib import Path
 from datetime import datetime
 import logging
 import os
+
 
 logging.basicConfig(
     format='[%(levelname) 5s/%(asctime)s] %(name)s: %(message)s',
@@ -162,16 +167,33 @@ class Bot(TelegramClient):
         thumb: str | None = None,
         media: bool = False,
     ) -> Message | None:
-        
-        
+
+        # If it's not a file upload 
         if not file_path:
-            return await self.send_message(
-                entity=chat_id,
-                message=message,
-                reply_to=reply_to_message_id,
-            )
-         
-        await self.send_file(
+            if not message.noforwards: 
+                print('no forward message')
+                return await self.forward_messages(
+                    entity=chat_id,
+                    messages=message,
+                    from_peer=message.chat.id,
+                )
+            
+            # If the groups o rmessage is restricted
+            else:
+                # Since users can't send messages, we insert in the messa.text
+                if message.buttons:
+                    for row in message.buttons:
+                        for button in row:
+                            if button.url:
+                                message.text += f"\n**[Acessar]({button.url})**"
+
+                return await self.send_message(
+                    entity=chat_id,
+                    message=message,
+                    reply_to=reply_to_message_id,
+                )
+
+        return await self.send_file(
             entity=chat_id,
             file=file_path,
             file_name=message.file.name,
@@ -379,16 +401,16 @@ class Bot(TelegramClient):
             )
         )
 
-
 async def main():
     bot = Bot()
+
     await bot.start(
         phone=settings.phone_number,
         password=settings.password
     )
 
     # Chat to catch from
-    origin_group = -1001781106134
+    origin_group = -1001962702899
 
     # Chat to send to
     destiny_group = 7924621890 
@@ -398,14 +420,14 @@ async def main():
 
     
     # The last message it stoped
-    offset_id = 161
+    # offset_id = 161
 
     print("\n>>> Cloner up and running.\n")
     await bot.clone_messages(
         origin_group_id=origin_group,
         destiny_group_id=destiny_group,
         # topic_id=topic_id,
-        offset_id=offset_id
+        # offset_id=offset_id
     )
 
     await bot.disconnect()
