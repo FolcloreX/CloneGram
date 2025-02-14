@@ -49,6 +49,7 @@ def get_file_name(message: Message) -> str | None:
 
 def get_file_extension(file_path: str) -> str|None:
    # Detecta o tipo do arquivo com base no conteúdo
+    print(f"\nError in function {file_path}\n")
     kind = filetype.guess(file_path)
     if kind:
         return kind.extension

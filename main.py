@@ -133,29 +133,23 @@ class Bot(TelegramClient):
         else:
             file_path = self.download_dir / f"{message.id}_temp"
         
-        #await fast_download(
+        # await fast_download(
         #    client=self,
         #    message=message,
         #    file_path=str(file_path),
         #    progress_callback=create_progress_callback(
         #        f"Downloading message_id:{message.id}")
-        #)
+        # )
 
-        await self.download_media(
+        file_path = await self.download_media(
             message=message, 
             file=str(file_path),
             progress_callback=create_progress_callback(
                 f"Downloading message_id:{message.id}"),
         )
-
+        
         # Sometimes the file in the telegram doesn't have filename
         # Which has the extension that is a requirement to telegram upload
-        if not filename:
-            extension = get_file_extension(str(file_path))
-            new_file_path = file_path.with_suffix(f".{extension}")
-            os.rename(file_path, new_file_path)
-            file_path = new_file_path
-       
         await self.download_queue.put((message, file_path))
 
     async def _send_copy_message(
@@ -166,12 +160,12 @@ class Bot(TelegramClient):
         file_path: str | None = None,
         thumb: str | None = None,
         media: bool = False,
+        group_policy: bool = False,
     ) -> Message | None:
 
         # If it's not a file upload 
         if not file_path:
-            if not message.noforwards: 
-                print('no forward message')
+            if not message.noforwards and not group_policy: 
                 return await self.forward_messages(
                     entity=chat_id,
                     messages=message,
@@ -337,7 +331,7 @@ class Bot(TelegramClient):
         if isinstance(message, MessageService):
             print(f"Skipping message ID {message.id} as it's a service message.")
             return None
-
+        
 
         protected_content_media = (
             (
@@ -355,6 +349,7 @@ class Bot(TelegramClient):
                 chat_id=destiny_group.id,
                 message=message,
                 reply_to_message_id=topic_id,
+                group_policy=origin_group.noforwards
             )
 
     async def clone_messages(
@@ -410,7 +405,7 @@ async def main():
     )
 
     # Chat to catch from
-    origin_group = -1001962702899
+    origin_group = -1001697666550
 
     # Chat to send to
     destiny_group = 7924621890 
@@ -420,14 +415,14 @@ async def main():
 
     
     # The last message it stoped
-    # offset_id = 161
+    offset_id = 120
 
     print("\n>>> Cloner up and running.\n")
     await bot.clone_messages(
         origin_group_id=origin_group,
         destiny_group_id=destiny_group,
         # topic_id=topic_id,
-        # offset_id=offset_id
+        offset_id=offset_id
     )
 
     await bot.disconnect()
