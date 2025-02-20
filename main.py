@@ -170,6 +170,7 @@ class Bot(TelegramClient):
                     entity=chat_id,
                     messages=message,
                     from_peer=message.chat.id,
+                    drop_author=True,
                 )
             
             # If the groups o rmessage is restricted
